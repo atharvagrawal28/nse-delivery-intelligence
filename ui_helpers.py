@@ -21,39 +21,46 @@ from universe import get_active_symbols
 # ============================================================================
 _GLOBAL_CSS = """
 <style>
-/* ── Hide Streamlit cloud toolbar (Share / GitHub / star / pencil / ⋮) ─── */
-[data-testid="stToolbar"]          { display: none !important; }
-[data-testid="stDecoration"]       { display: none !important; }
-[data-testid="stStatusWidget"]     { display: none !important; }
-#MainMenu                          { display: none !important; }
-footer                             { display: none !important; }
+/* ── Hide only the cloud action buttons (Share/GitHub/star/pencil) ──────── */
+/* Do NOT hide #MainMenu or the header — they control the sidebar toggle    */
+[data-testid="stToolbar"]      { display: none !important; }
+[data-testid="stDecoration"]   { display: none !important; }
+[data-testid="stStatusWidget"] { display: none !important; }
 
-/* ── Clean header ──────────────────────────────────────────────────────── */
-[data-testid="stHeader"] {
-    background: transparent !important;
-    border-bottom: none !important;
-}
-
-/* ── Tighter sidebar ───────────────────────────────────────────────────── */
+/* ── Sidebar — clearly distinct background so toggle arrow is visible ─── */
 [data-testid="stSidebar"] {
-    background: #0e1117;
-    border-right: 1px solid #1e2530;
+    background: #131922 !important;
+    border-right: 1px solid #2a3a50 !important;
+    min-width: 240px;
 }
+
+/* Sidebar expand/collapse arrow — ensure it's always visible */
+[data-testid="collapsedControl"] {
+    color: #7a9abf !important;
+    background: #131922 !important;
+    border-right: 1px solid #2a3a50 !important;
+}
+button[kind="header"] {
+    color: #7a9abf !important;
+}
+
+/* Sidebar label text */
+[data-testid="stSidebar"] label,
 [data-testid="stSidebar"] .stSelectbox label,
 [data-testid="stSidebar"] .stSlider label,
 [data-testid="stSidebar"] .stMultiSelect label,
 [data-testid="stSidebar"] .stCheckbox label {
-    font-size: 0.82rem;
-    color: #c0c8d8;
+    font-size: 0.82rem !important;
+    color: #c0c8d8 !important;
     letter-spacing: 0.02em;
 }
 [data-testid="stSidebar"] h1,
 [data-testid="stSidebar"] h2,
 [data-testid="stSidebar"] h3 {
-    color: #e0e8f8;
-    font-size: 0.95rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
+    color: #e0e8f8 !important;
+    font-size: 0.9rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
 }
 

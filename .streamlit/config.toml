@@ -3,6 +3,7 @@ gatherUsageStats = false
 
 [ui]
 # "minimal" hides the Share / GitHub / star / edit toolbar buttons
+# but keeps the sidebar expand/collapse control intact
 toolbarMode = "minimal"
 
 [server]

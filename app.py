@@ -82,6 +82,17 @@ def render() -> None:
         "Custom":   None,
     }
 
+    # Mobile hint — shown in main body only on small screens via CSS
+    st.markdown(
+        "<p style='display:none' class='mobile-sidebar-hint'>"
+        "⬅️ Tap the <strong>&gt;</strong> arrow on the left to open filters</p>"
+        "<style>"
+        "@media (max-width: 768px) { .mobile-sidebar-hint { display:block !important; "
+        "font-size:0.82rem; color:#7a9abf; margin-bottom:8px; } }"
+        "</style>",
+        unsafe_allow_html=True,
+    )
+
     with st.sidebar:
         st.header("Filters")
 
