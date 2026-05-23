@@ -1,0 +1,12 @@
+[browser]
+gatherUsageStats = false
+
+[ui]
+# "minimal" hides the Share / GitHub / star / edit toolbar buttons
+toolbarMode = "minimal"
+
+[server]
+headless = true
+enableCORS = false
+enableXsrfProtection = true
+maxUploadSize = 10
