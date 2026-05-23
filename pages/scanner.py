@@ -16,7 +16,7 @@ from ui_helpers import (
     to_excel_bytes,
 )
 
-st.set_page_config(page_title="Scanner — NSE Delivery", layout="wide")
+st.set_page_config(page_title="Scanner — NSE Delivery", layout="wide", initial_sidebar_state="expanded")
 inject_global_css()
 st.title("Scanner")
 
