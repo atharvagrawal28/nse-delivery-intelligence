@@ -22,9 +22,17 @@ from universe import get_active_symbols
 _GLOBAL_CSS = """
 <style>
 /* ── Hide only the cloud action buttons (Share / GitHub / star / pencil) ── */
-/* Nothing else is touched — sidebar, header and MainMenu are left alone     */
 [data-testid="stToolbar"]      { display: none !important; }
 [data-testid="stStatusWidget"] { display: none !important; }
+
+/* ── Force sidebar always visible (overrides collapsed transform) ───────── */
+section[data-testid="stSidebar"] {
+    transform: none !important;
+    min-width: 240px !important;
+    width: 240px !important;
+    display: flex !important;
+    visibility: visible !important;
+}
 
 /* ── Metric cards ──────────────────────────────────────────────────────── */
 [data-testid="stMetric"] {
