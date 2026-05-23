@@ -17,7 +17,7 @@ import sys
 
 from config import configure_logging
 from db import date_already_loaded, init_schema
-from etl import previous_trading_day, process_date
+from etl import is_weekend, previous_trading_day, process_date
 from nse_downloader import clean_old_raw_folders
 from universe import backfill_new_symbol, get_active_symbols, sync_universe
 
@@ -46,7 +46,12 @@ def main() -> int:
         return 1
 
     # 4. Target date
-    target = previous_trading_day()
+    # On a weekday the script runs at ~6:30 PM IST — NSE publishes bhavcopy by
+    # ~5-6 PM, so today's data is already up. We try today first; if today is
+    # a weekend we fall back to the most recent weekday.
+    from datetime import datetime as _dt
+    _today = _dt.now().date()
+    target = _today if not is_weekend(_today) else previous_trading_day(_today)
     log.info("Target trading date: %s", target)
 
     # 5. Idempotency

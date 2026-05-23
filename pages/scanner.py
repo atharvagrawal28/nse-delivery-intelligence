@@ -4,19 +4,20 @@ from __future__ import annotations
 from datetime import date, timedelta
 
 import streamlit as st
-from st_aggrid import AgGrid
 
 from analytics import decorate, latest_per_symbol, load_history
 from ui_helpers import (
-    build_grid_options,
     cached_symbols,
+    inject_global_css,
     prepare_display_df,
+    render_aggrid,
     render_footer,
     to_csv_bytes,
     to_excel_bytes,
 )
 
 st.set_page_config(page_title="Scanner — NSE Delivery", layout="wide")
+inject_global_css()
 st.title("Scanner")
 
 symbols = cached_symbols()
@@ -56,16 +57,7 @@ if latest.empty:
 st.metric("Matches", f"{len(latest)}")
 disp = prepare_display_df(latest)
 
-AgGrid(
-    disp,
-    gridOptions=build_grid_options(disp, show_analytics=True),
-    theme="alpine",
-    allow_unsafe_jscode=True,
-    fit_columns_on_grid_load=False,
-    height=520,
-    update_mode="NO_UPDATE",
-    enable_enterprise_modules=False,
-)
+render_aggrid(disp, show_analytics=True, height=520)
 
 st.divider()
 c1, c2 = st.columns(2)

@@ -5,19 +5,20 @@ from datetime import date, timedelta
 
 import plotly.graph_objects as go
 import streamlit as st
-from st_aggrid import AgGrid
 
 from analytics import decorate, load_history
 from ui_helpers import (
-    build_grid_options,
     cached_symbols,
+    inject_global_css,
     prepare_display_df,
+    render_aggrid,
     render_footer,
     to_csv_bytes,
     to_excel_bytes,
 )
 
 st.set_page_config(page_title="Stock Detail — NSE Delivery", layout="wide")
+inject_global_css()
 st.title("Stock Detail")
 
 symbols = cached_symbols()
@@ -51,7 +52,7 @@ fig = go.Figure()
 fig.add_trace(go.Scatter(
     x=df["date"], y=df["delivery_pct"],
     mode="lines", name="Delivery %",
-    line=dict(color="#1f77b4", width=2),
+    line=dict(color="#4e8cff", width=2),
 ))
 fig.add_trace(go.Scatter(
     x=df["date"], y=df["delivery_pct_20d_avg"],
@@ -64,26 +65,22 @@ fig.add_trace(go.Scatter(
     line=dict(color="#2ca02c", width=1.5), yaxis="y2",
 ))
 fig.update_layout(
-    height=380,
+    height=360,
     margin=dict(l=10, r=10, t=30, b=10),
-    yaxis=dict(title="Delivery %"),
-    yaxis2=dict(title="Close ₹", overlaying="y", side="right"),
-    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+    paper_bgcolor="#0e1117",
+    plot_bgcolor="#0e1117",
+    font=dict(color="#c0c8d8"),
+    yaxis=dict(title="Delivery %", gridcolor="#1e2a3a", color="#7a8a9a"),
+    yaxis2=dict(title="Close ₹", overlaying="y", side="right",
+                gridcolor="#1e2a3a", color="#7a8a9a"),
+    legend=dict(orientation="h", yanchor="bottom", y=1.02,
+                xanchor="right", x=1, font=dict(size=11)),
     hovermode="x unified",
 )
 st.plotly_chart(fig, use_container_width=True)
 
 st.subheader("Daily history")
-AgGrid(
-    disp,
-    gridOptions=build_grid_options(disp, show_analytics=True),
-    theme="alpine",
-    allow_unsafe_jscode=True,
-    fit_columns_on_grid_load=False,
-    height=520,
-    update_mode="NO_UPDATE",
-    enable_enterprise_modules=False,
-)
+render_aggrid(disp, show_analytics=True, height=520)
 
 st.divider()
 c1, c2 = st.columns(2)

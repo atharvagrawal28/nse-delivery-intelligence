@@ -11,17 +11,112 @@ from datetime import date
 
 import pandas as pd
 import streamlit as st
-from st_aggrid import GridOptionsBuilder, JsCode
 
 from config import DOD_THRESHOLDS
 from universe import get_active_symbols
 
 
 # ============================================================================
+# Professional CSS — injected once per page via inject_global_css()
+# ============================================================================
+_GLOBAL_CSS = """
+<style>
+/* ── Hide Streamlit cloud toolbar (Share / GitHub / star / pencil / ⋮) ─── */
+[data-testid="stToolbar"]          { display: none !important; }
+[data-testid="stDecoration"]       { display: none !important; }
+[data-testid="stStatusWidget"]     { display: none !important; }
+#MainMenu                          { display: none !important; }
+footer                             { display: none !important; }
+
+/* ── Clean header ──────────────────────────────────────────────────────── */
+[data-testid="stHeader"] {
+    background: transparent !important;
+    border-bottom: none !important;
+}
+
+/* ── Tighter sidebar ───────────────────────────────────────────────────── */
+[data-testid="stSidebar"] {
+    background: #0e1117;
+    border-right: 1px solid #1e2530;
+}
+[data-testid="stSidebar"] .stSelectbox label,
+[data-testid="stSidebar"] .stSlider label,
+[data-testid="stSidebar"] .stMultiSelect label,
+[data-testid="stSidebar"] .stCheckbox label {
+    font-size: 0.82rem;
+    color: #c0c8d8;
+    letter-spacing: 0.02em;
+}
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3 {
+    color: #e0e8f8;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+/* ── Metric cards ──────────────────────────────────────────────────────── */
+[data-testid="stMetric"] {
+    background: #161b27;
+    border: 1px solid #1e2a3a;
+    border-radius: 8px;
+    padding: 12px 16px;
+}
+[data-testid="stMetricLabel"] { color: #7a8a9a; font-size: 0.78rem; }
+[data-testid="stMetricValue"] { color: #e8f0fe; font-size: 1.5rem; font-weight: 700; }
+
+/* ── Download buttons ──────────────────────────────────────────────────── */
+[data-testid="stDownloadButton"] > button {
+    width: 100%;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 8px 16px;
+    border: 1px solid #2a3a50;
+    transition: background 0.15s;
+}
+
+/* ── AgGrid container ──────────────────────────────────────────────────── */
+.ag-root-wrapper {
+    border-radius: 6px !important;
+    border: 1px solid #1e2a3a !important;
+    overflow: hidden;
+}
+.ag-header { border-bottom: 2px solid #2a3a50 !important; }
+.ag-row-even { background-color: #0e1117 !important; }
+.ag-row-odd  { background-color: #111820 !important; }
+.ag-row:hover { background-color: #1a2332 !important; }
+
+/* ── Subheader / section labels ────────────────────────────────────────── */
+h2, h3 {
+    color: #c8d8f0;
+    font-weight: 600;
+}
+</style>
+"""
+
+
+def inject_global_css() -> None:
+    """Call once at the top of every page to apply shared styling."""
+    st.markdown(_GLOBAL_CSS, unsafe_allow_html=True)
+
+
+# ============================================================================
+# AgGrid — lazy import so non-Streamlit scripts (backfill, ETL) don't need it
+# ============================================================================
+def _aggrid_imports():
+    from st_aggrid import AgGrid, GridOptionsBuilder, JsCode  # noqa: F401
+    return AgGrid, GridOptionsBuilder, JsCode
+
+
+# ============================================================================
 # AgGrid JS — exactly 3 reusable blocks
 # ============================================================================
-def build_dod_cell_style() -> JsCode:
+def build_dod_cell_style():
     """Block 1: cellStyle_dod — generated from DOD_THRESHOLDS (no hardcoded hex)."""
+    _, _, JsCode = _aggrid_imports()
     pos = sorted(DOD_THRESHOLDS["positive"], key=lambda x: -x["above"])
     neg = sorted(DOD_THRESHOLDS["negative"], key=lambda x: x["below"])
     branches: list[str] = []
@@ -48,8 +143,9 @@ def build_dod_cell_style() -> JsCode:
     )
 
 
-# Block 2: valueFormatter_indian_int
-INDIAN_INT_FORMATTER = JsCode("""
+def _indian_int_formatter():
+    _, _, JsCode = _aggrid_imports()
+    return JsCode("""
 function(params) {
   const v = params.value;
   if (v == null || v === '') return '';
@@ -69,8 +165,10 @@ function(params) {
 }
 """)
 
-# Block 3: valueFormatter_indian_decimal
-INDIAN_DECIMAL_FORMATTER = JsCode("""
+
+def _indian_decimal_formatter():
+    _, _, JsCode = _aggrid_imports()
+    return JsCode("""
 function(params) {
   const v = params.value;
   if (v == null || v === '') return '';
@@ -116,7 +214,11 @@ def prepare_display_df(df: pd.DataFrame) -> pd.DataFrame:
 # ============================================================================
 def build_grid_options(df: pd.DataFrame, show_analytics: bool) -> dict:
     """Build AgGrid options with exact column order from spec."""
-    cell_style_dod = build_dod_cell_style()
+    _, GridOptionsBuilder, JsCode = _aggrid_imports()
+    cell_style_dod   = build_dod_cell_style()
+    int_fmt          = _indian_int_formatter()
+    dec_fmt          = _indian_decimal_formatter()
+
     gb = GridOptionsBuilder.from_dataframe(df)
     gb.configure_default_column(sortable=True, filter=True, resizable=True)
 
@@ -124,21 +226,21 @@ def build_grid_options(df: pd.DataFrame, show_analytics: bool) -> dict:
     gb.configure_column("series",          header_name="Series", width=80)
     gb.configure_column("date_display",    header_name="Date", width=100)
     gb.configure_column("traded_qty",      header_name="Total Traded Qty",
-                        valueFormatter=INDIAN_INT_FORMATTER, type=["numericColumn"], width=155)
-    gb.configure_column("dod_traded_qty",  header_name="dod change",
-                        cellStyle=cell_style_dod, type=["numericColumn"], width=105)
+                        valueFormatter=int_fmt, type=["numericColumn"], width=155)
+    gb.configure_column("dod_traded_qty",  header_name="DoD Chg",
+                        cellStyle=cell_style_dod, type=["numericColumn"], width=95)
     gb.configure_column("turnover",        header_name="Turnover ₹",
-                        valueFormatter=INDIAN_DECIMAL_FORMATTER, type=["numericColumn"], width=165)
-    gb.configure_column("dod_turnover",    header_name="dod change",
-                        cellStyle=cell_style_dod, type=["numericColumn"], width=105)
+                        valueFormatter=dec_fmt, type=["numericColumn"], width=165)
+    gb.configure_column("dod_turnover",    header_name="DoD Chg",
+                        cellStyle=cell_style_dod, type=["numericColumn"], width=95)
     gb.configure_column("trades",          header_name="No. of Trades",
-                        valueFormatter=INDIAN_INT_FORMATTER, type=["numericColumn"], width=125)
+                        valueFormatter=int_fmt, type=["numericColumn"], width=125)
     gb.configure_column("deliverable_qty", header_name="Deliverable Qty",
-                        valueFormatter=INDIAN_INT_FORMATTER, type=["numericColumn"], width=145)
-    gb.configure_column("dod_deliverable_qty", header_name="dod change",
-                        cellStyle=cell_style_dod, type=["numericColumn"], width=105)
-    gb.configure_column("delivery_pct",    header_name="% Dly Qt to Traded",
-                        type=["numericColumn"], width=150)
+                        valueFormatter=int_fmt, type=["numericColumn"], width=145)
+    gb.configure_column("dod_deliverable_qty", header_name="DoD Chg",
+                        cellStyle=cell_style_dod, type=["numericColumn"], width=95)
+    gb.configure_column("delivery_pct",    header_name="% Dly to Traded",
+                        type=["numericColumn"], width=140)
 
     if show_analytics:
         gb.configure_column("delivery_pct_5d_avg",        header_name="5D Avg %",
@@ -146,7 +248,7 @@ def build_grid_options(df: pd.DataFrame, show_analytics: bool) -> dict:
         gb.configure_column("delivery_pct_20d_avg",       header_name="20D Avg %",
                             type=["numericColumn"], width=100)
         gb.configure_column("delivery_pct_percentile_1y", header_name="1Y Pctile",
-                            type=["numericColumn"], width=105)
+                            type=["numericColumn"], width=100)
         gb.configure_column("signal",                     header_name="Signal", width=135)
     else:
         for c in ("delivery_pct_5d_avg", "delivery_pct_20d_avg",
@@ -159,8 +261,8 @@ def build_grid_options(df: pd.DataFrame, show_analytics: bool) -> dict:
             gb.configure_column(c, hide=True)
 
     options = gb.build()
-    options["rowHeight"] = 24
-    options["headerHeight"] = 36
+    options["rowHeight"] = 26
+    options["headerHeight"] = 38
     options["onFirstDataRendered"] = JsCode(
         "function(p){"
         "  var ca = p.columnApi || p.api;"
@@ -184,6 +286,39 @@ def build_grid_options(df: pd.DataFrame, show_analytics: bool) -> dict:
     ordered += [c for c in options["columnDefs"] if c["field"] not in desired]
     options["columnDefs"] = ordered
     return options
+
+
+# ============================================================================
+# AgGrid render with fallback
+# ============================================================================
+def render_aggrid(df: pd.DataFrame, show_analytics: bool, height: int = 520) -> None:
+    """Render AgGrid with automatic fallback to st.dataframe on unsupported browsers."""
+    try:
+        AgGrid, _, _ = _aggrid_imports()
+        AgGrid(
+            df,
+            gridOptions=build_grid_options(df, show_analytics),
+            theme="alpine",
+            allow_unsafe_jscode=True,
+            fit_columns_on_grid_load=False,
+            height=height,
+            update_mode="NO_UPDATE",
+            enable_enterprise_modules=False,
+        )
+    except Exception:
+        # Fallback: plain Streamlit dataframe (works on all browsers / environments)
+        _cols_to_show = [
+            c for c in [
+                "date_display", "symbol", "series",
+                "traded_qty", "dod_traded_qty",
+                "turnover", "dod_turnover",
+                "trades", "deliverable_qty", "dod_deliverable_qty",
+                "delivery_pct",
+                *(["delivery_pct_5d_avg", "delivery_pct_20d_avg",
+                   "delivery_pct_percentile_1y", "signal"] if show_analytics else []),
+            ] if c in df.columns
+        ]
+        st.dataframe(df[_cols_to_show], use_container_width=True, height=height)
 
 
 # ============================================================================
@@ -255,7 +390,6 @@ def to_excel_bytes(df: pd.DataFrame, show_analytics: bool = True) -> bytes:
             if fmt:
                 for cell in ws[letter][1:]:
                     cell.number_format = fmt
-            # auto-width — always convert to str to avoid float/NA issues
             max_len = len(str(col_name))
             for v in out[col_name].fillna("").astype(str).tolist()[:200]:
                 if len(v) > max_len:
@@ -276,10 +410,11 @@ def cached_symbols() -> list[str]:
 # Footer
 # ============================================================================
 def render_footer() -> None:
-    st.divider()
     st.markdown(
-        "<div style='text-align:center;color:#888;font-size:0.85rem;padding:8px 0 4px'>"
-        "Built by <strong>Atharv Agrawal</strong> &nbsp;·&nbsp; "
+        "<hr style='border:none;border-top:1px solid #1e2a3a;margin:24px 0 12px'/>"
+        "<div style='text-align:center;color:#4a5a6a;font-size:0.8rem;padding:4px 0 16px'>"
+        "Built by <strong style='color:#7a9abf'>Atharv Agrawal</strong>"
+        "&nbsp;·&nbsp;"
         "<a href='https://www.linkedin.com/in/atharv-agrawal-295743233' "
         "target='_blank' style='color:#0a66c2;text-decoration:none;'>LinkedIn</a>"
         "</div>",

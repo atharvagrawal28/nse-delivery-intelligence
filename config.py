@@ -17,7 +17,14 @@ RAW_DIR.mkdir(parents=True, exist_ok=True)
 RAW_RETENTION_DAYS = 7
 
 # --- Database -----------------------------------------------------------------
+# Priority: env var (local .env / GitHub Actions) → Streamlit secrets (Cloud)
 DATABASE_URL = os.getenv("DATABASE_URL", "")
+if not DATABASE_URL:
+    try:
+        import streamlit as st
+        DATABASE_URL = st.secrets.get("DATABASE_URL", "")
+    except Exception:
+        pass
 
 # --- NSE archive URLs ---------------------------------------------------------
 # NSE has migrated several times. Each list below is tried in order; the first

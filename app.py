@@ -11,14 +11,15 @@ import logging
 from datetime import date, timedelta
 
 import streamlit as st
-from st_aggrid import AgGrid
 
 from analytics import decorate, load_history
 from config import configure_logging
 from ui_helpers import (
     build_grid_options,
     cached_symbols,
+    inject_global_css,
     prepare_display_df,
+    render_aggrid,
     render_footer,
     to_csv_bytes,
     to_excel_bytes,
@@ -58,6 +59,7 @@ def render() -> None:
         page_icon="📊",
         layout="wide",
     )
+    inject_global_css()
     st.title("NSE Delivery Intelligence Terminal")
 
     all_symbols = cached_symbols()
@@ -135,16 +137,7 @@ def render() -> None:
     col_b.metric("Symbols", f"{df_disp['symbol'].nunique()}")
     col_c.metric("Sessions", f"{df_disp['date'].nunique()}")
 
-    AgGrid(
-        df_disp,
-        gridOptions=build_grid_options(df_disp, show_analytics),
-        theme="alpine",
-        allow_unsafe_jscode=True,
-        fit_columns_on_grid_load=False,
-        height=620,
-        update_mode="NO_UPDATE",
-        enable_enterprise_modules=False,
-    )
+    render_aggrid(df_disp, show_analytics, height=620)
 
     st.divider()
     c1, c2 = st.columns(2)
