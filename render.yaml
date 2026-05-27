@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: nse-delivery-intelligence
+    runtime: docker
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        sync: false          # you paste the value manually in Render dashboard
+    healthCheckPath: /_stcore/health
+    autoDeploy: true
