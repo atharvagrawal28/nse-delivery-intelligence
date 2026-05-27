@@ -3,3 +3,9 @@ gatherUsageStats = false
 
 [client]
 toolbarMode = "minimal"
+
+[server]
+headless = true
+port = 7860
+address = "0.0.0.0"
+enableCORS = false

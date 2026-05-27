@@ -1,3 +1,14 @@
+---
+title: NSE Delivery Intelligence Terminal
+emoji: 📊
+colorFrom: blue
+colorTo: indigo
+sdk: streamlit
+sdk_version: "1.35.0"
+app_file: app.py
+pinned: false
+---
+
 # NSE Delivery Intelligence Terminal
 
 A production-grade, minimal, single-maintainer system for tracking NIFTY 50
